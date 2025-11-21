@@ -1,0 +1,29 @@
+# FastAPI
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-multipart
+
+# LangChain & LangGraph
+langchain>=0.1.0
+langchain-google-genai
+langgraph
+langsmith
+google-generativeai
+
+# Supabase
+supabase
+postgrest
+
+# Async & HTTP
+httpx
+aiohttp
+
+# WhatsApp
+twilio
+
+# Utils
+python-dotenv
+asyncpg
+pytest
