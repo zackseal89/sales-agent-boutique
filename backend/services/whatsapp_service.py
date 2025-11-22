@@ -22,6 +22,10 @@ class WhatsAppService:
             self.client = None
         else:
             self.client = Client(self.account_sid, self.auth_token)
+            
+        # Ensure sender number has whatsapp: prefix
+        if self.whatsapp_number and not self.whatsapp_number.startswith("whatsapp:"):
+            self.whatsapp_number = f"whatsapp:{self.whatsapp_number}"
     
     async def send_message(
         self,
@@ -60,22 +64,32 @@ class WhatsAppService:
             }
             
             if media_urls:
-                message_params["media_url"] = media_urls
+                # Fix for local development: Prepend ngrok URL if path is relative
+                processed_urls = []
+                base_url = "https://4c040e3c9ac8.ngrok-free.app"  # Hardcoded for now, should be env var
+                
+                for url in media_urls:
+                    if not url.startswith("http"):
+                        # Remove leading slash if present to avoid double slash
+                        clean_path = url.lstrip("/")
+                        full_url = f"{base_url}/{clean_path}"
+                        processed_urls.append(full_url)
+                        print(f"🔗 Converted local path to: {full_url}")
+                    else:
+                        processed_urls.append(url)
+                        
+                message_params["media_url"] = processed_urls
             
-            twilio_message = self.client.messages.create(**message_params)
+            message_instance = self.client.messages.create(**message_params)
             
-            print(f"✅ Message sent to {to_number}: {twilio_message.sid}")
+            # Log success
+            with open("webhook_debug.log", "a", encoding="utf-8") as f:
+                f.write(f"✅ Message sent successfully! SID: {message_instance.sid}\n")
+            
+            print(f"✅ Message sent! SID: {message_instance.sid}")
             return True
             
         except Exception as e:
-            with open("webhook_debug.log", "a", encoding="utf-8") as f:
-                f.write(f"❌ Error sending WhatsApp message: {str(e)}\n")
-                if hasattr(e, 'code'):
-                    f.write(f"   Twilio Error Code: {e.code}\n")
-                if hasattr(e, 'msg'):
-                    f.write(f"   Twilio Error Message: {e.msg}\n")
-            
-            print(f"❌ Error sending WhatsApp message: {str(e)}")
             if hasattr(e, 'code'):
                 print(f"   Twilio Error Code: {e.code}")
             if hasattr(e, 'msg'):

@@ -35,7 +35,8 @@ class AgentState(BaseModel):
         "checkout",
         "payment",
         "order_confirmation",
-        "tool_execution"
+        "tool_execution",
+        "general_inquiry"
     ] = "greeting"
     
     # Extracted information
@@ -45,6 +46,9 @@ class AgentState(BaseModel):
     
     # Shopping cart
     cart_items: List[Dict[str, Any]] = Field(default_factory=list)
+    selected_product_id: Optional[str] = None  # Track last viewed/selected product
+    selected_size: Optional[str] = None  # Store size selection for cart
+    cart_action: Optional[str] = None  # Track cart operation (add, remove, view)
     
     # Customer preferences
     customer_name: Optional[str] = None
@@ -54,6 +58,15 @@ class AgentState(BaseModel):
     # Agent response
     agent_response: str = ""
     response_images: List[str] = Field(default_factory=list)
+    
+    # Supervisor intent classification
+    intent: Optional[str] = None  # Classified intent by supervisor
+    
+    # Conversational Orchestrator fields
+    conversation_mode: Literal["chatting", "routing", "specialist_active"] = "chatting"
+    gathered_context: Dict[str, Any] = Field(default_factory=dict)  # Rich context from conversation
+    routing_confidence: float = 0.0  # 0.0-1.0 confidence for routing decision
+    turns_in_conversation: int = 0  # Track conversation depth
     
     # Tool execution
     pending_tool_calls: List[Dict[str, Any]] = Field(default_factory=list)

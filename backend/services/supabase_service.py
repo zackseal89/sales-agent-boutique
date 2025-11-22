@@ -354,6 +354,18 @@ class SupabaseService:
         
         response = query_builder.limit(limit).execute()
         return response.data
+    
+    # =====================================================
+    # GENERAL KNOWLEDGE
+    # =====================================================
+    
+    async def get_boutique_info(self, boutique_id: str) -> List[Dict[str, Any]]:
+        """Get general information for a boutique"""
+        response = self.client.table("boutique_info")\
+            .select("*")\
+            .eq("boutique_id", boutique_id)\
+            .execute()
+        return response.data
 
 # Global instance
 supabase_service = SupabaseService()

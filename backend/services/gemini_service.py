@@ -20,9 +20,9 @@ class GeminiService:
         
         genai.configure(api_key=self.api_key)
         
-        # Use Gemini 2.0 Flash (stable)
-        self.vision_model = genai.GenerativeModel('gemini-2.0-flash')
-        self.text_model = genai.GenerativeModel('gemini-2.0-flash')
+        # Use Gemini 2.5 Pro (Latest Stable High-Reasoning Model)
+        self.vision_model = genai.GenerativeModel('gemini-2.5-pro')
+        self.text_model = genai.GenerativeModel('gemini-2.5-pro')
     
     async def analyze_product_image(self, image_url: str) -> Dict[str, Any]:
         """
@@ -86,6 +86,19 @@ Be specific and accurate. Focus on visual attributes that would help match simil
         # Combine into search query
         query_parts = [category, style] + keywords[:3]
         return " ".join([p for p in query_parts if p])
+    
+    async def generate_content(self, prompt: str) -> str:
+        """
+        Generate text content from a prompt
+        
+        Args:
+            prompt: The prompt string
+        
+        Returns:
+            Generated text response
+        """
+        response = self.text_model.generate_content(prompt)
+        return response.text.strip()
     
     async def generate_conversational_response(
         self,
@@ -187,7 +200,7 @@ Recommend the most likely size for this customer. Reply with just the size (S/M/
         
         # Create model with tools
         model_with_tools = genai.GenerativeModel(
-            model_name='gemini-2.0-flash',
+            model_name='gemini-2.5-pro',
             tools=tools
         )
         

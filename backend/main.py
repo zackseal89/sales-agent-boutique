@@ -10,7 +10,7 @@ import uvicorn
 from contextlib import asynccontextmanager
 
 # Import routers
-from api.webhooks import router as webhooks_router
+from backend.api.webhooks import router as webhooks_router
 # from api.dashboard import router as dashboard_router
 
 # Configuration
@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     supabase_url: str
     supabase_service_key: str
     google_api_key: str
+    paylink_api_key: str = ""
+    paylink_username: str = ""
     
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -94,7 +96,38 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include routers
 app.include_router(webhooks_router, prefix="/webhook", tags=["webhooks"])
+# Import and include payments router
+from backend.api.payments import router as payments_router
+app.include_router(payments_router, prefix="/webhook", tags=["payments"])
 # app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
+
+# Debug endpoint for conversations
+@app.get("/debug/conversations")
+async def view_all_conversations():
+    """Debug endpoint to view active conversation states"""
+    try:
+        from backend.services.supabase_service import supabase_service
+        
+        # Query the checkpoints table directly
+        response = await supabase_service.client.table("checkpoints").select("thread_id, created_at, metadata").execute()
+        
+        # Group by thread_id to get unique conversations
+        conversations = {}
+        for row in response.data:
+            thread_id = row['thread_id']
+            if thread_id not in conversations:
+                conversations[thread_id] = {
+                    "thread_id": thread_id,
+                    "last_active": row['created_at'],
+                    "metadata": row['metadata']
+                }
+        
+        return {
+            "total_active_threads": len(conversations),
+            "conversations": list(conversations.values())
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     uvicorn.run(

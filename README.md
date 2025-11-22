@@ -13,7 +13,7 @@ A multi-tenant SaaS platform that enables fashion boutiques in Kenya and East Af
 ## 🏗️ Architecture
 
 - **Backend**: FastAPI + Python 3.11 (serverless on Google Cloud Run)
-- **AI Agent**: LangGraph + Google Gemini 2.0 Flash
+- **AI Agent**: Tool-Centered Orchestrator + Google Gemini 2.0 Flash
 - **Database**: Supabase (PostgreSQL + pgvector)
 - **Frontend**: Next.js 14 + TypeScript
 - **Payments**: PayLink M-Pesa
@@ -24,12 +24,12 @@ A multi-tenant SaaS platform that enables fashion boutiques in Kenya and East Af
 ```
 fashion-boutique-agent/
 ├── backend/              # FastAPI backend
-│   ├── agents/          # LangGraph agent logic
+│   ├── orchestrator/    # Deterministic message handler
 │   ├── api/             # API routes & webhooks
 │   ├── services/        # External service integrations
 │   ├── models/          # Pydantic models
 │   └── utils/           # Helper functions
-├── dashboard/           # Next.js dashboard
+├── frontend/            # Next.js dashboard
 ├── supabase/           # Database migrations
 └── scripts/            # Utility scripts
 ```
@@ -52,13 +52,41 @@ python -m venv venv
 venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 cp .env.example .env  # Configure your environment variables
-uvicorn main:app --reload
+python -m uvicorn backend.main:app --reload --port 8000
 ```
 
-### Dashboard Setup
+#### 🔧 Development Mode: Mock LLM
+
+For development and testing without relying on the Gemini API, you can enable the mock LLM mode:
+
+1. **Enable Mock Mode**: Add to your `.env` file:
+   ```env
+   USE_MOCK_LLM=true
+   ```
+
+2. **What It Does**: 
+   - Bypasses the real Gemini API call
+   - Returns a static JSON response for testing
+   - Useful for testing orchestrator logic, tool execution, and WhatsApp flow without LLM dependency
+
+3. **When to Use**:
+   - Testing the WhatsApp webhook integration
+   - Developing frontend dashboard components
+   - Writing unit tests for orchestrator logic
+   - Debugging tool execution without LLM variability
+   - Working offline or when Gemini API is unavailable
+
+4. **Disable Mock Mode**: Set `USE_MOCK_LLM=false` or remove the variable to use the real Gemini API
+
+5. **Run Tests**:
+   ```bash
+   python -m pytest backend/tests/test_llm_client.py -v
+   ```
+
+### Frontend Setup
 
 ```bash
-cd dashboard
+cd frontend
 npm install
 cp .env.local.example .env.local  # Configure your environment variables
 npm run dev
@@ -71,7 +99,7 @@ See the following guides for detailed information:
 - [Project Overview & Architecture](./Project%20Overview%20&%20Architecture.MD)
 - [Technical Stack & Supabase Setup](./Technical%20Stack%20&%20Supabase%20Setup.MD)
 - [Master Implementation Guide](./Master%20Implementation%20Guide.MD)
-- [Visual Architecture Overview](./.gemini/antigravity/brain/21f26c1a-88a3-48a6-b53e-2da4536e53e0/architecture_visual_overview.md)
+- [Master Agent Prompt](./MASTER_AGENT_PROMPT.md)
 
 ## 🌍 Deployment
 
