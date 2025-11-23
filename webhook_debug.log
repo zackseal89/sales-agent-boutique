@@ -56,3 +56,21 @@
 📱 Incoming WhatsApp message (Orchestrator)
 ============================================================
 🤖 Orchestrator Response: {'response': "I'm having trouble connecting to my brain right now. 🧠 Please try again in a moment!", 'images': [], 'intent': 'error'}
+
+============================================================
+📱 Incoming WhatsApp message (Orchestrator)
+============================================================
+🤖 Orchestrator Response: {'response': "I'm having trouble connecting to my brain right now. 🧠 Please try again in a moment!", 'images': [], 'intent': 'error'}
+✅ Message sent successfully! SID: SMd3fe2fb96e4cea12fe89f1c6ce3630ec
+
+============================================================
+📱 Incoming WhatsApp message (Orchestrator)
+============================================================
+🤖 Orchestrator Response: {'response': "I'm having trouble connecting to my brain right now. 🧠 Please try again in a moment!", 'images': [], 'intent': 'error'}
+✅ Message sent successfully! SID: SMfdbff74ffc4f9b5cc3100236c28a68d5
+
+============================================================
+📱 Incoming WhatsApp message (Orchestrator)
+============================================================
+🤖 Orchestrator Response: {'response': "I'm having trouble connecting to my brain right now. 🧠 Please try again in a moment!", 'images': [], 'intent': 'error'}
+✅ Message sent successfully! SID: SM7bab9e82cb2826fef513d622efb6768a
