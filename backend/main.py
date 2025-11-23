@@ -95,10 +95,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 # Include routers
-app.include_router(webhooks_router, prefix="/webhook", tags=["webhooks"])
+app.include_router(webhooks_router, prefix="/webhooks", tags=["webhooks"])
 # Import and include payments router
 from backend.api.payments import router as payments_router
-app.include_router(payments_router, prefix="/webhook", tags=["payments"])
+app.include_router(payments_router, prefix="/webhooks", tags=["payments"])
 # app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
 
 # Debug endpoint for conversations

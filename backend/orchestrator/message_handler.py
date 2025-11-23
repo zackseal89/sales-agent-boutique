@@ -122,23 +122,21 @@ async def handle_whatsapp_message(request: Request) -> Dict[str, Any]:
 
 async def get_business_id_by_phone(phone: str) -> str:
     """Get business ID from WhatsApp number"""
-    # TODO: Implement DB lookup
-    # For now return a placeholder or query DB
     try:
-        response = await supabase_service.client.table("boutiques").select("id").eq("whatsapp_number", phone).single().execute()
+        response = supabase_service.client.table("boutiques").select("id").eq("whatsapp_number", phone).single().execute()
         if response.data:
             return response.data['id']
-    except:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to lookup business by phone {phone}: {e}")
     
-    # Fallback for dev/testing
-    return "00000000-0000-0000-0000-000000000000" 
+    # Return known default boutique ID
+    return "550e8400-e29b-41d4-a716-446655440000" 
 
 async def get_or_create_conversation(business_id: str, customer_phone: str) -> Dict:
     """Get existing conversation or create new one"""
     try:
         # Try to find active conversation
-        response = await supabase_service.client.table("conversations")\
+        response = supabase_service.client.table("conversations")\
             .select("*")\
             .eq("boutique_id", business_id)\
             .eq("customer_phone", customer_phone)\
@@ -155,12 +153,13 @@ async def get_or_create_conversation(business_id: str, customer_phone: str) -> D
             "status": "active",
             "metadata": {}
         }
-        response = await supabase_service.client.table("conversations").insert(new_conv).execute()
+        response = supabase_service.client.table("conversations").insert(new_conv).execute()
         return response.data[0]
     except Exception as e:
         logger.error(f"Failed to get/create conversation: {e}")
-        # Return dummy for dev if DB fails
-        return {"id": "00000000-0000-0000-0000-000000000000"}
+        import traceback
+        logger.error(traceback.format_exc())
+        raise  # Re-raise to trigger fallback response
 
 async def save_message(conversation_id: str, role: str, content: str, media_url: str = None):
     """Save message to database"""
@@ -171,14 +170,14 @@ async def save_message(conversation_id: str, role: str, content: str, media_url:
             "content": content,
             "attachments": [media_url] if media_url else []
         }
-        await supabase_service.client.table("messages").insert(msg).execute()
+        supabase_service.client.table("messages").insert(msg).execute()
     except Exception as e:
         logger.error(f"Failed to save message: {e}")
 
 async def get_recent_messages(conversation_id: str, limit: int = 8):
     """Fetch recent chat history"""
     try:
-        response = await supabase_service.client.table("messages")\
+        response = supabase_service.client.table("messages")\
             .select("*")\
             .eq("conversation_id", conversation_id)\
             .order("created_at", desc=True)\
@@ -194,7 +193,7 @@ async def get_recent_messages(conversation_id: str, limit: int = 8):
 async def get_products(business_id: str):
     """Fetch available products"""
     try:
-        response = await supabase_service.client.table("products")\
+        response = supabase_service.client.table("products")\
             .select("id, name, price, stock_quantity, sizes, colors")\
             .eq("boutique_id", business_id)\
             .gt("stock_quantity", 0)\
@@ -240,7 +239,7 @@ async def update_conversation_version(conversation_id: str, prompt_version: int)
         prompt_version: Version of AI settings used
     """
     try:
-        await supabase_service.client.table("conversations")\
+        supabase_service.client.table("conversations")\
             .update({"prompt_version": prompt_version})\
             .eq("id", conversation_id)\
             .execute()
