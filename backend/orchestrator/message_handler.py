@@ -183,8 +183,7 @@ def get_or_create_conversation(business_id: str, customer_phone: str) -> Dict:
         new_conv = {
             "boutique_id": business_id,
             "customer_phone": customer_phone,
-            "status": "active",
-            "metadata": {}
+            "status": "active"
         }
         response = supabase_service.client.table("conversations").insert(new_conv).execute()
         return response.data[0]
