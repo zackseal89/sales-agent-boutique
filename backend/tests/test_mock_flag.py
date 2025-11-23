@@ -1,38 +1,20 @@
 import os
 import sys
+import pytest
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-# Test 1: Check environment variable
-print("=" * 50)
-print("TEST 1: Environment Variable Check")
-print("=" * 50)
-mock_flag = os.getenv("USE_MOCK_LLM", "false")
-print(f"USE_MOCK_LLM raw value: '{mock_flag}'")
-print(f"USE_MOCK_LLM.lower(): '{mock_flag.lower()}'")
-print(f"Comparison result: {mock_flag.lower() == 'true'}")
-print()
-
-# Test 2: Import and test the LLM client
-print("=" * 50)
-print("TEST 2: LLM Client Mock Response")
-print("=" * 50)
-import asyncio
 from backend.orchestrator.llm_client import generate_response
 
+@pytest.mark.anyio
 async def test_mock():
-    response = await generate_response("Test prompt")
-    print(f"Response intent: {response.get('intent')}")
-    print(f"Response text: {response.get('reply_text')}")
-    print(f"Is mock response: {response.get('intent') == 'mock_greeting'}")
-    return response
+    """
+    Tests that the LLM client returns a mock response when USE_MOCK_LLM is true.
+    """
+    # Set the environment variable to ensure the mock is used
+    os.environ['USE_MOCK_LLM'] = 'true'
 
-result = asyncio.run(test_mock())
-print()
-print("=" * 50)
-print("RESULT:")
-print("=" * 50)
-if result.get('intent') == 'mock_greeting':
-    print("✅ MOCK LLM IS WORKING!")
-else:
-    print("❌ MOCK LLM NOT WORKING - Using real Gemini or fallback")
-    print(f"Full response: {result}")
+    response = await generate_response("Test prompt")
+
+    assert response.get('intent') == 'mock_greeting', "The intent should be 'mock_greeting'"
+    assert "Hello! I'm a mock Gemini response." in response.get('reply_text', ''), "The reply text should contain the mock response message"

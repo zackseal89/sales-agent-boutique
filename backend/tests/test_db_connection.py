@@ -2,6 +2,7 @@ import os
 import asyncio
 import psycopg
 from dotenv import load_dotenv
+import pytest
 
 load_dotenv()
 
@@ -13,6 +14,7 @@ from urllib.parse import urlparse
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+@pytest.mark.anyio
 async def test_connection():
     db_url = os.getenv("SUPABASE_DB_URL")
     

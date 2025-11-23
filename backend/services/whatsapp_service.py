@@ -66,7 +66,7 @@ class WhatsAppService:
             if media_urls:
                 # Fix for local development: Prepend ngrok URL if path is relative
                 processed_urls = []
-                base_url = "https://4c040e3c9ac8.ngrok-free.app"  # Hardcoded for now, should be env var
+                base_url = os.getenv("NGROK_URL")
                 
                 for url in media_urls:
                     if not url.startswith("http"):

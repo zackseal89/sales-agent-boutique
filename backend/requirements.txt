@@ -1,5 +1,6 @@
 httpx
 aiohttp
+fastapi
 
 # WhatsApp
 twilio
@@ -8,3 +9,8 @@ twilio
 python-dotenv
 asyncpg
 pytest
+google-generativeai
+psycopg[binary]
+paylink
+supabase
+trio
