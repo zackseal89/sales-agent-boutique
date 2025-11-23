@@ -168,11 +168,15 @@ def get_business_id_by_phone(phone: str) -> str:
 def get_or_create_conversation(business_id: str, customer_phone: str) -> Dict:
     """Get existing conversation or create new one"""
     try:
+        # First, get or create the customer
+        customer = get_or_create_customer(business_id, customer_phone)
+        customer_id = customer['id']
+        
         # Try to find active conversation
         response = supabase_service.client.table("conversations")\
             .select("*")\
             .eq("boutique_id", business_id)\
-            .eq("customer_phone", customer_phone)\
+            .eq("customer_id", customer_id)\
             .eq("status", "active")\
             .execute()
             
@@ -182,6 +186,7 @@ def get_or_create_conversation(business_id: str, customer_phone: str) -> Dict:
         # Create new
         new_conv = {
             "boutique_id": business_id,
+            "customer_id": customer_id,
             "customer_phone": customer_phone,
             "status": "active"
         }
@@ -192,6 +197,33 @@ def get_or_create_conversation(business_id: str, customer_phone: str) -> Dict:
         import traceback
         logger.error(traceback.format_exc())
         raise  # Re-raise to trigger fallback response
+
+def get_or_create_customer(business_id: str, customer_phone: str) -> Dict:
+    """Get existing customer or create new one"""
+    try:
+        # Try to find existing customer
+        response = supabase_service.client.table("customers")\
+            .select("*")\
+            .eq("boutique_id", business_id)\
+            .eq("whatsapp_number", customer_phone)\
+            .execute()
+            
+        if response.data and len(response.data) > 0:
+            return response.data[0]
+            
+        # Create new customer
+        new_customer = {
+            "boutique_id": business_id,
+            "whatsapp_number": customer_phone,
+            "name": None  # Will be updated later when we learn their name
+        }
+        response = supabase_service.client.table("customers").insert(new_customer).execute()
+        return response.data[0]
+    except Exception as e:
+        logger.error(f"Failed to get/create customer: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
 
 def save_message(conversation_id: str, role: str, content: str, media_url: str = None):
     """Save message to database"""
