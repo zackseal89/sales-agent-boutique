@@ -34,20 +34,22 @@ async def handle_whatsapp_message(request: Request) -> Dict[str, Any]:
         # 2. Identify business (from Twilio number)
         # In production, this would query the boutiques table
         # For MVP, we might hardcode or use a default business ID
-        business_id = await get_business_id_by_phone(to_number)
+        business_id = get_business_id_by_phone(to_number)
         
         # 3. Get/create conversation
-        conversation = await get_or_create_conversation(business_id, from_number)
+        # Normalize customer phone number
+        customer_phone = normalize_phone_number(from_number)
+        conversation = get_or_create_conversation(business_id, customer_phone)
         conversation_id = conversation['id']
         
         # 4. Save customer message
-        await save_message(conversation_id, "customer", body, media_url)
+        save_message(conversation_id, "customer", body, media_url)
         
         # 5. Fetch context
-        history = await get_recent_messages(conversation_id, limit=8)
+        history = get_recent_messages(conversation_id, limit=8)
         # memories = await search_memories(conversation_id, body) # TODO: Implement memory search
         memories = []
-        inventory = await get_products(business_id)
+        inventory = get_products(business_id)
         
         # 6. Build LLM prompt
         prompt = await build_prompt({
@@ -97,10 +99,10 @@ async def handle_whatsapp_message(request: Request) -> Dict[str, Any]:
         filtered_reply = filter_response(reply_text, do_not_say)
         
         # 11. Save agent response
-        await save_message(conversation_id, "agent", filtered_reply)
+        save_message(conversation_id, "agent", filtered_reply)
         
         # 12. Update conversation with prompt version
-        await update_conversation_version(conversation_id, prompt_version)
+        update_conversation_version(conversation_id, prompt_version)
         
         # 13. Return response (webhook handler will send via Twilio)
         return {
@@ -120,19 +122,50 @@ async def handle_whatsapp_message(request: Request) -> Dict[str, Any]:
 
 # --- Helper Functions ---
 
-async def get_business_id_by_phone(phone: str) -> str:
+def normalize_phone_number(phone: str) -> str:
+    """
+    Normalize phone number from Twilio format to database format
+    Twilio sends: whatsapp:+14155238886
+    Database has: 254712345678 or +254712345678
+    """
+    if not phone:
+        return ""
+    
+    # Remove whatsapp: prefix
+    phone = phone.replace("whatsapp:", "").strip()
+    
+    # Remove + prefix for comparison
+    phone = phone.replace("+", "").strip()
+    
+    return phone
+
+def get_business_id_by_phone(phone: str) -> str:
     """Get business ID from WhatsApp number"""
     try:
-        response = supabase_service.client.table("boutiques").select("id").eq("whatsapp_number", phone).single().execute()
-        if response.data:
-            return response.data['id']
+        # Normalize the phone number
+        normalized_phone = normalize_phone_number(phone)
+        logger.info(f"Looking up business by phone: {phone} -> normalized: {normalized_phone}")
+        
+        # Try exact match first
+        response = supabase_service.client.table("boutiques").select("id").eq("whatsapp_number", normalized_phone).execute()
+        if response.data and len(response.data) > 0:
+            logger.info(f"Found business: {response.data[0]['id']}")
+            return response.data[0]['id']
+        
+        # Try with + prefix
+        response = supabase_service.client.table("boutiques").select("id").eq("whatsapp_number", f"+{normalized_phone}").execute()
+        if response.data and len(response.data) > 0:
+            logger.info(f"Found business with + prefix: {response.data[0]['id']}")
+            return response.data[0]['id']
+            
     except Exception as e:
         logger.warning(f"Failed to lookup business by phone {phone}: {e}")
     
     # Return known default boutique ID
+    logger.info("Using default boutique ID")
     return "550e8400-e29b-41d4-a716-446655440000" 
 
-async def get_or_create_conversation(business_id: str, customer_phone: str) -> Dict:
+def get_or_create_conversation(business_id: str, customer_phone: str) -> Dict:
     """Get existing conversation or create new one"""
     try:
         # Try to find active conversation
@@ -161,7 +194,7 @@ async def get_or_create_conversation(business_id: str, customer_phone: str) -> D
         logger.error(traceback.format_exc())
         raise  # Re-raise to trigger fallback response
 
-async def save_message(conversation_id: str, role: str, content: str, media_url: str = None):
+def save_message(conversation_id: str, role: str, content: str, media_url: str = None):
     """Save message to database"""
     try:
         msg = {
@@ -174,7 +207,7 @@ async def save_message(conversation_id: str, role: str, content: str, media_url:
     except Exception as e:
         logger.error(f"Failed to save message: {e}")
 
-async def get_recent_messages(conversation_id: str, limit: int = 8):
+def get_recent_messages(conversation_id: str, limit: int = 8):
     """Fetch recent chat history"""
     try:
         response = supabase_service.client.table("messages")\
@@ -190,7 +223,7 @@ async def get_recent_messages(conversation_id: str, limit: int = 8):
         logger.error(f"Failed to fetch history: {e}")
         return []
 
-async def get_products(business_id: str):
+def get_products(business_id: str):
     """Fetch available products"""
     try:
         response = supabase_service.client.table("products")\
@@ -230,7 +263,7 @@ def filter_response(response: str, forbidden_phrases: list) -> str:
     
     return filtered
 
-async def update_conversation_version(conversation_id: str, prompt_version: int):
+def update_conversation_version(conversation_id: str, prompt_version: int):
     """
     Update conversation with the prompt version used
     
