@@ -28,7 +28,7 @@ async def build_prompt(context: Dict[str, Any]) -> str:
         
         # Fetch AI settings from database
         logger.info(f"Fetching AI settings for boutique: {business_id}")
-        ai_settings = await ai_settings_service.get_ai_settings(business_id)
+        ai_settings = ai_settings_service.get_ai_settings(business_id)
         
         if not ai_settings:
             logger.warning(f"No AI settings found, using defaults")
