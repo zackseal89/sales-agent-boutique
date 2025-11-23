@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+
+# Virtual environments
+venv/
+.env
+.env.local
+.env.example
+
+# Logs
+*.log
+webhook_debug.log
+
+# Supabase keys (never commit)
+supabase/.env
+supabase/.env.local
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Prisma / DB artifacts
+prisma/migrations/dev.db
+*.sqlite
+*.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Mac junk
+._*
+
+# Temporary files
+*.tmp
+*.bak
+
+# Jest / Coverage
+coverage/
+
+# Build outputs
+dist/
+build/
+
+# Cache
+.cache/
+.parcel-cache/
+
+# Git internal ignore
+.gitignored
