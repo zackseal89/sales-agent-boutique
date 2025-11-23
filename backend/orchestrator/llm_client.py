@@ -27,6 +27,13 @@ async def generate_response(prompt: str, image_url: str = None) -> Dict[str, Any
     use_mock = os.getenv("USE_MOCK_LLM", "false").lower() == "true"
     if use_mock:
         logger.info("🔧 Mock LLM enabled – returning static response")
+        if image_url:
+            return {
+                "reply_text": "Thanks for the image! I'm analyzing it now.",
+                "actions": [],
+                "intent": "image_analysis",
+                "entities": {}
+            }
         return {
             "reply_text": "Hello! I'm a mock Gemini response. How can I assist you today?",
             "actions": [],

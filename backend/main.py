@@ -13,6 +13,10 @@ from contextlib import asynccontextmanager
 from backend.api.webhooks import router as webhooks_router
 # from api.dashboard import router as dashboard_router
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Configuration
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

@@ -9,10 +9,12 @@ from backend.models.schemas import WhatsAppMessage
 from backend.services.supabase_service import supabase_service
 from backend.services.whatsapp_service import whatsapp_service
 
+import os
+
 router = APIRouter()
 
 # Default boutique ID (will be dynamic in production with multi-tenancy)
-DEFAULT_BOUTIQUE_ID = "550e8400-e29b-41d4-a716-446655440000"
+DEFAULT_BOUTIQUE_ID = os.getenv("BOUTIQUE_ID", "550e8400-e29b-41d4-a716-446655440000")
 
 @router.post("/whatsapp")
 async def whatsapp_webhook(request: Request):

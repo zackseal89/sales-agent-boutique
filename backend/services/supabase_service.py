@@ -283,6 +283,16 @@ class SupabaseService:
         response = query.execute()
         return response.data
     
+    async def get_order_by_transaction_id(self, transaction_id: str) -> Optional[Dict[str, Any]]:
+        """Get order by transaction ID"""
+        response = self.client.table("orders").select("*").eq("transaction_id", transaction_id).single().execute()
+        return response.data if response.data else None
+
+    async def get_customer_by_id(self, customer_id: str) -> Optional[Dict[str, Any]]:
+        """Get customer by ID"""
+        response = self.client.table("customers").select("*").eq("id", customer_id).single().execute()
+        return response.data if response.data else None
+
     async def update_order_status(
         self,
         order_id: str,
