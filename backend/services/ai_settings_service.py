@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class AISettingsService:
     """Service for managing AI settings and prompt versions"""
     
-    async def get_ai_settings(self, boutique_id: str) -> Optional[Dict[str, Any]]:
+    def get_ai_settings(self, boutique_id: str) -> Optional[Dict[str, Any]]:
         """
         Fetch AI settings for a boutique
         
@@ -25,7 +25,7 @@ class AISettingsService:
         try:
             logger.info(f"Fetching AI settings for boutique: {boutique_id}")
             
-            response = await supabase_service.client.table("boutique_ai_settings").select("*").eq("boutique_id", boutique_id).single().execute()
+            response = supabase_service.client.table("boutique_ai_settings").select("*").eq("boutique_id", boutique_id).single().execute()
             
             if response.data:
                 logger.info(f"AI settings found (version {response.data.get('prompt_version')})")

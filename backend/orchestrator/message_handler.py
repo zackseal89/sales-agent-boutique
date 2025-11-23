@@ -90,7 +90,7 @@ async def handle_whatsapp_message(request: Request) -> Dict[str, Any]:
                 # Continue execution, don't crash
         
         # 9. Get AI settings for response filtering and version logging
-        ai_settings = await ai_settings_service.get_ai_settings(business_id)
+        ai_settings = ai_settings_service.get_ai_settings(business_id)
         prompt_version = ai_settings.get('prompt_version', 1) if ai_settings else 1
         do_not_say = ai_settings.get('do_not_say', []) if ai_settings else []
         
