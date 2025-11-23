@@ -1,87 +1,81 @@
-from typing import Dict, Any, List
-import json
-
-def build_prompt(context: Dict[str, Any]) -> str:
-    """
-    Construct the system prompt for the LLM.
-    Includes:
-    - Role definition
-    - Business context
-    - Conversation history
-    - Available tools
-    - Inventory data
-    """
-    
-    history = context.get("history", [])
-    memories = context.get("memories", [])
-    inventory = context.get("inventory", [])
-    current_message = context.get("current_message", "")
-    has_image = context.get("has_image", False)
-    
-    # Format history
-    history_str = ""
-    for msg in history:
-        role = "User" if msg["role"] == "customer" else "Agent"
-        content = msg["content"] or "[Image]"
-        history_str += f"{role}: {content}\n"
-    
-    # Format inventory
-    inventory_str = json.dumps(inventory, indent=2) if inventory else "No products found."
-    
-    # Format memories
-    memories_str = "\n".join([m["summary"] for m in memories]) if memories else "No relevant memories."
-
-    prompt = f"""
-You are the AI Sales Agent for a fashion boutique in Kenya.
-Your goal is to help customers find products, answer questions, and facilitate sales via WhatsApp.
-
-### SYSTEM CONTEXT
-- **Tone:** Professional, friendly, helpful. Use emojis occasionally.
-- **Location:** Kenya (Currency: KES).
-- **Capabilities:** You can search products, check stock, add to cart, and initiate M-Pesa payments.
-
-### AVAILABLE TOOLS
-You have access to the following tools. Output a JSON object with "actions" to use them.
-
-- `search_products(query)`: Search for products by name/description.
-- `get_inventory(product_name)`: Check specific product stock.
-- `add_to_cart(product_id, quantity)`: Add item to customer's cart.
-- `get_cart()`: View current cart.
-- `initiate_mpesa_stk(phone, amount)`: Start payment process.
-- `get_customer_profile(phone)`: Get customer details.
-
-### BUSINESS DATA
-**Current Inventory:**
-{inventory_str}
-
-**Relevant Memories:**
-{memories_str}
-
-### CONVERSATION HISTORY
-{history_str}
-User: {current_message}
-{ "[User sent an image]" if has_image else "" }
-
-### INSTRUCTIONS
-1. Analyze the user's intent.
-2. Check if you need to use any tools (e.g., if user asks for "red dress", use `search_products`).
-3. Generate a natural response text.
-4. Return a VALID JSON object in this format:
-
-```json
-{{
-  "intent": "product_search" | "add_to_cart" | "checkout" | "greeting" | "other",
-  "reply_text": "Your response to the user...",
-  "actions": [
-    {{ "tool": "tool_name", "params": {{ "param1": "value" }} }}
-  ],
-  "entities": {{ "product": "...", "color": "..." }}
-}}
-```
-
-**CRITICAL:**
-- ONLY output the JSON. No markdown, no conversational text outside the JSON.
-- If the user wants to buy, ALWAYS check stock first.
-- If the user says "checkout", verify cart is not empty, then ask for confirmation or initiate payment.
 """
-    return prompt
+Context Builder - Dynamic Prompt Construction
+Fetches AI settings from database and builds LLM prompts
+"""
+
+from typing import Dict, Any
+import logging
+from backend.services.ai_settings_service import ai_settings_service
+
+logger = logging.getLogger(__name__)
+
+async def build_prompt(context: Dict[str, Any]) -> str:
+    """
+    Build dynamic LLM prompt with AI settings from database
+    
+    Args:
+        context: Dict containing business_id, history, inventory, current_message, etc.
+    
+    Returns:
+        Formatted prompt string for LLM
+    """
+    try:
+        business_id = context.get("business_id")
+        history = context.get("history", [])
+        inventory = context.get("inventory", [])
+        current_message = context.get("current_message", "")
+        has_image = context.get("has_image", False)
+        
+        # Fetch AI settings from database
+        logger.info(f"Fetching AI settings for boutique: {business_id}")
+        ai_settings = await ai_settings_service.get_ai_settings(business_id)
+        
+        if not ai_settings:
+            logger.warning(f"No AI settings found, using defaults")
+            system_prompt = "You are a helpful fashion sales assistant."
+            tone = "friendly"
+        else:
+            system_prompt = ai_settings.get("system_prompt", "")
+            tone = ai_settings.get("tone", "friendly")
+            logger.info(f"Using AI settings version {ai_settings.get('prompt_version')}")
+        
+        # Build conversation history
+        history_text = ""
+        if history:
+            history_text = "\n\nRECENT CONVERSATION:\n"
+            for msg in history[-8:]:
+                role = msg.get("role", "unknown")
+                content = msg.get("content", "")
+                history_text += f"{role.upper()}: {content}\n"
+        
+        # Build inventory
+        inventory_text = ""
+        if inventory:
+            inventory_text = "\n\nAVAILABLE PRODUCTS:\n"
+            for product in inventory[:10]:
+                name = product.get("name", "")
+                price = product.get("price", 0)
+                inventory_text += f"- {name} (KES {price})\n"
+        
+        # Combine into final prompt
+        full_prompt = f"""{system_prompt}
+
+TONE: {tone.upper()}
+{history_text}
+{inventory_text}
+
+CURRENT CUSTOMER MESSAGE:
+{current_message}
+
+INSTRUCTIONS:
+- Respond naturally and helpfully
+- Keep responses under 1600 characters
+- Return JSON: {{"reply_text": "...", "actions": [], "intent": "..."}}
+"""
+        
+        logger.info(f"Prompt built ({len(full_prompt)} chars)")
+        return full_prompt
+        
+    except Exception as e:
+        logger.error(f"Error building prompt: {str(e)}")
+        return f"You are a helpful assistant.\n\nCustomer: {context.get('current_message', '')}"

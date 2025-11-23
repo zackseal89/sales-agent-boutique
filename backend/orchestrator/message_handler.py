@@ -6,6 +6,7 @@ from datetime import datetime
 
 # Services
 from backend.services.supabase_service import supabase_service
+from backend.services.ai_settings_service import ai_settings_service
 
 # Orchestrator components
 from backend.orchestrator.tool_registry import ToolRegistry
@@ -86,16 +87,25 @@ async def handle_whatsapp_message(request: Request) -> Dict[str, Any]:
                 logger.error(f"❌ Tool execution failed: {str(e)}")
                 # Continue execution, don't crash
         
-        # 9. Save agent response
-        reply_text = llm_response.get("reply_text", "I'm sorry, I didn't catch that.")
-        await save_message(conversation_id, "agent", reply_text)
+        # 9. Get AI settings for response filtering and version logging
+        ai_settings = await ai_settings_service.get_ai_settings(business_id)
+        prompt_version = ai_settings.get('prompt_version', 1) if ai_settings else 1
+        do_not_say = ai_settings.get('do_not_say', []) if ai_settings else []
         
-        # 10. Return response (webhook handler will send via Twilio)
-        # The webhook router in api/webhooks.py expects a specific format or handles sending
-        # For now, we return the text so the router can send it
+        # 10. Filter response against forbidden phrases
+        reply_text = llm_response.get("reply_text", "I'm sorry, I didn't catch that.")
+        filtered_reply = filter_response(reply_text, do_not_say)
+        
+        # 11. Save agent response
+        await save_message(conversation_id, "agent", filtered_reply)
+        
+        # 12. Update conversation with prompt version
+        await update_conversation_version(conversation_id, prompt_version)
+        
+        # 13. Return response (webhook handler will send via Twilio)
         return {
-            "response": reply_text,
-            "images": [], # TODO: Extract images from tool results if any
+            "response": filtered_reply,
+            "images": [],
             "intent": llm_response.get("intent")
         }
 
@@ -194,3 +204,46 @@ async def get_products(business_id: str):
     except Exception as e:
         logger.error(f"Failed to fetch products: {e}")
         return []
+
+def filter_response(response: str, forbidden_phrases: list) -> str:
+    """
+    Filter response to remove forbidden phrases
+    
+    Args:
+        response: AI generated response
+        forbidden_phrases: List of phrases to filter out
+        
+    Returns:
+        Filtered response with forbidden phrases replaced
+    """
+    if not forbidden_phrases:
+        return response
+    
+    filtered = response
+    for phrase in forbidden_phrases:
+        # Case-insensitive replacement
+        import re
+        pattern = re.compile(re.escape(phrase), re.IGNORECASE)
+        filtered = pattern.sub('[filtered]', filtered)
+    
+    if '[filtered]' in filtered:
+        logger.warning(f"⚠️ Filtered forbidden phrases from response")
+    
+    return filtered
+
+async def update_conversation_version(conversation_id: str, prompt_version: int):
+    """
+    Update conversation with the prompt version used
+    
+    Args:
+        conversation_id: Conversation ID
+        prompt_version: Version of AI settings used
+    """
+    try:
+        await supabase_service.client.table("conversations")\
+            .update({"prompt_version": prompt_version})\
+            .eq("id", conversation_id)\
+            .execute()
+        logger.info(f"📝 Logged prompt version {prompt_version} for conversation {conversation_id}")
+    except Exception as e:
+        logger.error(f"Failed to update conversation version: {e}")
