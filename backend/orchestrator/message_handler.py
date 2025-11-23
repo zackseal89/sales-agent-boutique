@@ -50,7 +50,7 @@ async def handle_whatsapp_message(request: Request) -> Dict[str, Any]:
         inventory = await get_products(business_id)
         
         # 6. Build LLM prompt
-        prompt = build_prompt({
+        prompt = await build_prompt({
             "history": history,
             "memories": memories,
             "inventory": inventory,
