@@ -13,7 +13,7 @@ A multi-tenant SaaS platform that enables fashion boutiques in Kenya and East Af
 ## 🏗️ Architecture
 
 - **Backend**: FastAPI + Python 3.11 (serverless on Google Cloud Run)
-- **AI Agent**: Tool-Centered Orchestrator + Google Gemini 2.0 Flash
+- **AI Agent**: BoutiqueAIAgent with Model Context Protocol (MCP) + Google Gemini
 - **Database**: Supabase (PostgreSQL + pgvector)
 - **Frontend**: Next.js 14 + TypeScript
 - **Payments**: PayLink M-Pesa
@@ -24,14 +24,14 @@ A multi-tenant SaaS platform that enables fashion boutiques in Kenya and East Af
 ```
 fashion-boutique-agent/
 ├── backend/              # FastAPI backend
-│   ├── orchestrator/    # Deterministic message handler
+│   ├── agents/          # AI agent logic (BoutiqueAIAgent)
 │   ├── api/             # API routes & webhooks
-│   ├── services/        # External service integrations
+│   ├── services/        # External service integrations (Supabase, Twilio, MCP)
 │   ├── models/          # Pydantic models
-│   └── utils/           # Helper functions
-├── frontend/            # Next.js dashboard
-├── supabase/           # Database migrations
-└── scripts/            # Utility scripts
+│   └── utils/           # Helper functions (e.g., AI model wrappers)
+├── dashboard/           # Next.js dashboard
+├── supabase/            # Database migrations
+└── tests/               # Test files
 ```
 
 ## 🚀 Quick Start
