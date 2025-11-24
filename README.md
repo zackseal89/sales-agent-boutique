@@ -51,7 +51,7 @@ cd backend
 python -m venv venv
 venv\Scripts\activate  # Windows
 pip install -r requirements.txt
-cp .env.example .env  # Configure your environment variables
+# Create a .env file and add your environment variables
 python -m uvicorn backend.main:app --reload --port 8000
 ```
 
@@ -80,15 +80,15 @@ For development and testing without relying on the Gemini API, you can enable th
 
 5. **Run Tests**:
    ```bash
-   python -m pytest backend/tests/test_llm_client.py -v
+   python -m pytest backend/tests
    ```
 
 ### Frontend Setup
 
 ```bash
-cd frontend
+cd dashboard
 npm install
-cp .env.local.example .env.local  # Configure your environment variables
+# Create a .env.local file and add your environment variables
 npm run dev
 ```
 
